@@ -1,0 +1,19 @@
+/* frontend/src/css/input.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Updated styles to precisely match the Figma design */
+@layer components {
+    .nav-link {
+        @apply flex w-full items-center p-3 rounded-lg text-text-secondary hover:bg-light-teal hover:text-text-primary transition-colors;
+    }
+    /* The active link now has a solid teal background and white text */
+    .active-link {
+        @apply bg-primary-teal text-white hover:bg-primary-teal hover:text-white;
+    }
+    /* Ensure the secondary text inside an active link also turns white */
+    .active-link .text-text-secondary {
+        @apply text-white;
+    }
+}
