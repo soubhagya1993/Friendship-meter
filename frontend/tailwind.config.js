@@ -11,7 +11,7 @@ module.exports = {
       colors: {
         'primary-teal': '#4DB6AC',
         'light-teal': '#E6F3F2',
-        'background-beige': '#FBF9F6',
+        'background-beige': '#eee6ff',
         'card-beige': '#FFFDFA',
         'border-soft': '#F3EEE8',
         'text-primary': '#3D475C',
