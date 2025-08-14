@@ -1,5 +1,5 @@
 // frontend/src/js/main.js
-import { renderDashboard, renderFriendsPage, populateFriendOptions } from './ui.js';
+import { renderDashboard, renderFriendsPage, renderSettingsPage, populateFriendOptions } from './ui.js';
 import { saveInteraction } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -104,6 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 pageTitle.textContent = 'Your Friends';
                 pageSubtitle.textContent = 'Manage your connections';
                 renderFriendsPage(mainContentContainer, friendsCache);
+                break;
+            case 'settings':
+                pageTitle.textContent = 'Settings';
+                pageSubtitle.textContent = 'Manage your application';
+                renderSettingsPage(mainContentContainer);
                 break;
         }
     }

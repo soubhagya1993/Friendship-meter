@@ -102,3 +102,18 @@ export function populateFriendOptions(selectElement, friends) {
         selectElement.appendChild(option);
     });
 }
+
+
+/**
+ * Renders the "Settings" page placeholder.
+ * @param {HTMLElement} container - The element to render the page into.
+ */
+export function renderSettingsPage(container) {
+    const settingsContent = `
+        <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
+            <h3 class="font-nunito text-lg font-bold mb-4">Application Settings</h3>
+            <p class="text-text-secondary">Settings for notifications, data management, and account preferences will be available here in a future update.</p>
+        </div>
+    `;
+    container.innerHTML = settingsContent;
+}
