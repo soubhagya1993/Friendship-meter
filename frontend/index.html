@@ -1,15 +1,12 @@
-<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Friendship Meter</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
-    <!-- Link to the compiled CSS file -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
     <link href="src/css/styles.css" rel="stylesheet">
 </head>
 <body class="bg-background-beige font-inter text-text-primary">
@@ -19,17 +16,13 @@
         <aside class="w-72 bg-card-beige p-6 border-r border-border-soft flex flex-col">
             <h1 class="font-nunito text-2xl font-bold text-text-primary mb-2">Friendship Meter</h1>
             <p class="text-text-secondary text-sm mb-12">Cultivating meaningful connections</p>
-
             <nav>
                 <ul class="space-y-3">
                     <li>
                         <a href="#" data-page="dashboard" class="nav-link active-link group">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                                <div>
-                                    <span class="font-semibold">Dashboard</span>
-                                    <span class="block text-xs text-text-secondary group-hover:text-primary-teal">Overview & insights</span>
-                                </div>
+                                <div><span class="font-semibold">Dashboard</span><span class="block text-xs text-text-secondary group-hover:text-text-primary">Overview & insights</span></div>
                             </div>
                         </a>
                     </li>
@@ -37,28 +30,21 @@
                         <a href="#" data-page="friends" class="nav-link group">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.176-5.973"></path></svg>
-                                <div>
-                                    <span class="font-semibold">Friends</span>
-                                    <span class="block text-xs text-text-secondary group-hover:text-primary-teal">Manage connections</span>
-                                </div>
+                                <div><span class="font-semibold">Friends</span><span class="block text-xs text-text-secondary group-hover:text-text-primary">Manage connections</span></div>
                             </div>
                         </a>
                     </li>
-                     <li>
-                        <a href="#" class="nav-link group">
+                    <li>
+                        <a href="#" data-page="log" class="nav-link group">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <div>
-                                    <span class="font-semibold">Log Interaction</span>
-                                    <span class="block text-xs text-text-secondary group-hover:text-primary-teal">Track conversations</span>
-                                </div>
+                                <div><span class="font-semibold">Log Interaction</span><span class="block text-xs text-text-secondary group-hover:text-text-primary">Track conversations</span></div>
                             </div>
                         </a>
                     </li>
                 </ul>
             </nav>
-
-            <div class="mt-auto bg-teal-50 p-4 rounded-large">
+            <div class="mt-auto bg-teal-50 p-4 rounded-lg">
                 <h4 class="font-bold text-sm mb-1">💡 Tip</h4>
                 <p class="text-xs text-text-secondary">Regular small interactions often matter more than occasional long conversations.</p>
             </div>
@@ -66,7 +52,6 @@
 
         <!-- Main Content -->
         <main id="app" class="flex-grow p-8 overflow-y-auto">
-            <!-- Header -->
             <header class="flex justify-between items-center mb-8">
                 <div>
                     <h1 id="page-title" class="font-nunito text-3xl font-bold text-text-primary">Your Friendship Dashboard</h1>
@@ -77,20 +62,38 @@
                     <span>Log Interaction</span>
                 </button>
             </header>
-
-            <!-- Main Content Area -->
-            <div id="main-content" class="space-y-8">
-                <!-- Content will be loaded here by JS -->
-            </div>
+            <div id="main-content" class="space-y-8"></div>
         </main>
     </div>
 
-    <!-- Log Interaction Modal (keep as is) -->
+    <!-- Log Interaction Modal -->
     <div id="log-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
-        <!-- ... modal content ... -->
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 class="font-nunito text-xl font-bold text-text-primary mb-6">Log a Connection</h2>
+            <form id="log-form" class="space-y-5">
+                <div>
+                    <label for="friend-select" class="block text-sm font-medium text-text-secondary mb-1">Who did you connect with?</label>
+                    <select id="friend-select" name="friend" class="mt-1 block w-full p-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-teal focus:border-primary-teal">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary">How did you connect?</label>
+                    <div class="mt-2 grid grid-cols-2 gap-3">
+                        <button type="button" data-type="meetup" class="interaction-btn border-gray-300 border p-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-50"><span>☕</span><span>Meetup</span></button>
+                        <button type="button" data-type="call" class="interaction-btn border-gray-300 border p-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-50"><span>📞</span><span>Call</span></button>
+                        <button type="button" data-type="video" class="interaction-btn border-gray-300 border p-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-50"><span>💻</span><span>Video Call</span></button>
+                        <button type="button" data-type="text" class="interaction-btn border-gray-300 border p-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-50"><span>📱</span><span>Text</span></button>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancel-btn" type="button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300">Cancel</button>
+                    <button id="save-btn" type="submit" class="bg-primary-teal text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-600">Save Connection</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- JS files -->
     <script src="src/js/main.js" type="module"></script>
 </body>
 </html>
