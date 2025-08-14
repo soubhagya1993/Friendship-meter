@@ -1,3 +1,4 @@
+```text
 friendship_meter_webapp/
 ├── backend/
 │   ├── venv/                   # Virtual environment for Python
