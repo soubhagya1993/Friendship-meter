@@ -77,16 +77,14 @@ export function renderDashboard(container, data) {
  * @param {Array} friends - The array of friend objects.
  */
 export function renderFriendsPage(container, friends) {
+    // The container is now just a simple list of cards
     const friendsList = `
-        <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
-            <div class="space-y-1">
-                ${friends.map(createFriendListItem).join('')}
-            </div>
+        <div class="space-y-6">
+            ${friends.map(createManageFriendCard).join('')}
         </div>
     `;
     container.innerHTML = friendsList;
 }
-
 
 /**
  * Populates a <select> dropdown with friend options.
@@ -116,4 +114,40 @@ export function renderSettingsPage(container) {
         </div>
     `;
     container.innerHTML = settingsContent;
+}
+
+function createManageFriendCard({ name, avatar, email, phone, preference, bio, interactions, lastContactDays }) {
+    return `
+        <div class="bg-card-beige p-6 rounded-xl border border-border-soft space-y-4">
+            <div class="flex justify-between items-start">
+                <div class="flex items-center space-x-4">
+                    <img src="${avatar}" alt="${name}" class="w-12 h-12 rounded-full">
+                    <div>
+                        <h3 class="font-bold text-lg text-text-primary">${name}</h3>
+                        <p class="text-sm text-text-secondary">${email}</p>
+                        ${phone ? `<p class="text-sm text-text-secondary">${phone}</p>` : ''}
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="p-2 hover:bg-gray-200 rounded-md">
+                        <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                    <button class="p-2 hover:bg-gray-200 rounded-md">
+                        <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center text-sm text-text-secondary mb-3">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+                    <span>Prefers ${preference}</span>
+                </div>
+                <p class="text-sm text-text-secondary bg-background-beige p-3 rounded-md">${bio}</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="bg-gray-200 text-text-secondary text-xs font-semibold px-3 py-1 rounded-full">${interactions} interactions</span>
+                <span class="bg-pill-red-bg text-pill-red-text text-xs font-semibold px-3 py-1 rounded-full">Last contact: ${lastContactDays} days ago</span>
+            </div>
+        </div>
+    `;
 }
