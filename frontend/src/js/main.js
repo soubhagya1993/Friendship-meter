@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Element Selections ---
     const mainContentContainer = document.getElementById('main-content');
-    const headerLogBtn = document.getElementById('log-interaction-btn'); // The button in the header
+    // const headerLogBtn = document.getElementById('log-interaction-btn'); // The button in the header
+    const headerLogBtn = document.getElementById('header-action-button');
     const logModal = document.getElementById('log-modal');
     const cancelBtn = document.getElementById('cancel-btn');
     const logForm = document.getElementById('log-form');
