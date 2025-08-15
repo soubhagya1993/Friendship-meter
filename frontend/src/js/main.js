@@ -1,5 +1,5 @@
 // frontend/src/js/main.js
-import { renderDashboard, renderFriendsPage, renderSettingsPage, populateFriendOptions } from './ui.js';
+import { renderDashboard, renderFriendsPage, renderSettingsPage, populateFriendOptions, drawWeeklyChart } from './ui.js';
 import { saveInteraction } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 2, name: 'Sarah Johnson', avatar: 'https://placehold.co/40x40/4DB6AC/FFFFFF?text=SJ', lastContact: 'Last contact: 584 days ago', connection: 72, interactions: 18 },
         { id: 3, name: 'Mike Rodriguez', avatar: 'https://placehold.co/40x40/6495ED/FFFFFF?text=MR', lastContact: 'Last contact: 584 days ago', connection: 92, interactions: 31 }
     ];
+
 
     // --- Functions ---
 

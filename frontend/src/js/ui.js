@@ -58,6 +58,8 @@ export function renderDashboard(container, data) {
         </div>
     `;
 
+    const weeklyActivitySection = renderWeeklyActivity(data.weeklyActivity);
+
     const friendsSection = `
         <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
             <h2 class="font-nunito text-xl font-bold mb-1 text-text-primary">Your Friends</h2>
@@ -68,7 +70,7 @@ export function renderDashboard(container, data) {
         </div>
     `;
 
-    container.innerHTML = statsGrid + friendsSection;
+    container.innerHTML = statsGrid + friendsSection + weeklyActivitySection;
 }
 
 /**
@@ -150,4 +152,73 @@ function createManageFriendCard({ name, avatar, email, phone, preference, bio, i
             </div>
         </div>
     `;
+}
+
+/**
+ * Renders the Weekly Activity chart.
+ * @param {object} weeklyData - The data for the chart.
+ * @returns {string} - The HTML string for the chart container.
+ */
+function renderWeeklyActivity(weeklyData) {
+    // This function now just creates the container. The chart is drawn by another function.
+    return `
+        <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
+            <h2 class="font-nunito text-xl font-bold mb-1 text-text-primary">Weekly Activity</h2>
+            <p class="text-sm text-text-secondary mb-4">Your interaction patterns this week</p>
+            <div>
+                <canvas id="weeklyActivityChart"></canvas>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Initializes and draws the bar chart on the canvas.
+ * @param {object} weeklyData - The data for the chart.
+ */
+export function drawWeeklyChart(weeklyData) {
+    const ctx = document.getElementById('weeklyActivityChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: weeklyData.labels, // ['Mon', 'Tue', ...]
+            datasets: [{
+                label: 'Interactions',
+                data: weeklyData.data, // [3, 5, ...]
+                backgroundColor: '#4DB6AC',
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Hides the legend
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F3EEE8', // Soft grid lines
+                    },
+                    ticks: {
+                        color: '#8A94A6' // Y-axis text color
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false // Hides vertical grid lines
+                    },
+                    ticks: {
+                        color: '#8A94A6' // X-axis text color
+                    }
+                }
+            }
+        }
+    });
 }
