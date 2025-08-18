@@ -1,14 +1,18 @@
-# backend/app/__init__.py
 from flask import Flask
 from flask_cors import CORS
+from .models import db
+from .routes import api
 
 def create_app():
-    """Create and configure an instance of the Flask application."""
     app = Flask(__name__)
-    CORS(app) # Enable CORS for all routes
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///friendship_meter.db"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # Import and register blueprints
-    from .routes import api
+    CORS(app)
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()  # simple for dev; switch to Flask-Migrate later
+
     app.register_blueprint(api)
-
     return app
