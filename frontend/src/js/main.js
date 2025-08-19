@@ -11,7 +11,8 @@ import {
   getFriends,
   getOverviewStats,
   getWeeklyActivity,
-  saveInteraction
+  saveInteraction,
+  addFriend
 } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let friendsCache = [];
   let selectedInteractionType = null;
 
-  // ----- helpers -----
-  function getModalEls() {
+  // ----- helpers (Log Interaction modal) -----
+  function getLogModalEls() {
     return {
       modal: document.getElementById('log-modal'),
       form: document.getElementById('log-form'),
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function toggleModal(show) {
-    const { modal, form, typeBtns, friendSelect } = getModalEls();
+  function toggleLogModal(show) {
+    const { modal, form, typeBtns, friendSelect } = getLogModalEls();
     if (!modal) return;
 
     if (show) {
@@ -61,35 +62,95 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const payload = {
       friendId: Number(friendId),
-      type: selectedInteractionType,                 // meetup | call | video | text
+      type: selectedInteractionType,
       date: new Date().toISOString().slice(0, 10),
-      notes: ''                                      // optional
+      notes: ''
     };
     try {
       await saveInteraction(payload);
-      toggleModal(false);
-      // refresh dashboard to reflect new stats/chart
-      await go('dashboard');
+      toggleLogModal(false);
+      await go('dashboard'); // refresh stats + chart
     } catch (e) {
       console.error('[saveInteraction]', e);
       alert('Failed to log interaction. Please try again.');
     }
   }
 
-  function mapFriendsForDashboard(friends) {
-    // ui.createFriendListItem expects: { name, avatar, lastContact (string) OR lastContactDays, connection, interactions }
-    return friends.map(f => ({
-      name: f.name,
-      avatar: f.avatar,
-      lastContactDays: f.lastContactDays,
-      connection: f.connection,
-      interactions: f.interactions
-    }));
+  // ----- helpers (Add Friend modal) -----
+  function getAddFriendEls() {
+    return {
+      modal: document.getElementById('add-friend-modal'),
+      form: document.getElementById('add-friend-form'),
+      name: document.getElementById('af-name'),
+      email: document.getElementById('af-email'),
+      phone: document.getElementById('af-phone'),
+      pref: document.getElementById('af-preference'),
+      avatar: document.getElementById('af-avatar'),
+      bio: document.getElementById('af-bio'),
+      error: document.getElementById('af-error'),
+    };
+  }
+
+  function toggleAddFriendModal(show) {
+    const { modal, form, error } = getAddFriendEls();
+    if (!modal) return;
+    if (show) {
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      error?.classList.add('hidden');
+      error.textContent = '';
+      setTimeout(() => getAddFriendEls().name?.focus(), 0);
+    } else {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      form?.reset?.();
+    }
+  }
+
+  function validateFriendForm() {
+    const { name, email, phone } = getAddFriendEls();
+    if (!name.value.trim()) return 'Name is required.';
+    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return 'Email looks invalid.';
+    if (phone.value && phone.value.length < 6) return 'Phone looks too short.';
+    return null;
+    }
+
+  async function submitAddFriend(form) {
+    const { name, email, phone, pref, avatar, bio, error } = getAddFriendEls();
+    const msg = validateFriendForm();
+    if (msg) {
+      error.textContent = msg;
+      error.classList.remove('hidden');
+      return;
+    }
+    const payload = {
+      name: name.value.trim(),
+      email: email.value.trim() || null,
+      phone: phone.value.trim() || null,
+      preference: pref.value,
+      avatar: avatar.value.trim() || null,
+      bio: bio.value.trim() || ''
+    };
+
+    try {
+      await addFriend(payload);
+      toggleAddFriendModal(false);
+      // refresh data
+      const active = document.querySelector('.nav-link.active-link')?.dataset.page;
+      if (active === 'friends') {
+        await go('friends');
+      } else {
+        await go('dashboard');
+      }
+    } catch (e) {
+      console.error('[addFriend]', e);
+      error.textContent = 'Failed to save friend. Please try again.';
+      error.classList.remove('hidden');
+    }
   }
 
   // ----- router -----
   async function go(page) {
-    // highlight active
     document.querySelectorAll('.nav-link').forEach(a => {
       a.classList.toggle('active-link', a.dataset.page === page);
     });
@@ -109,15 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let friends = [];
         let weekly = { labels: [], data: [] };
         let overview = { totalFriends: 0, interactionsThisWeek: 0, avgConnection: 0, needAttention: 0 };
-
         try {
           const res = await Promise.all([ getFriends(), getWeeklyActivity(), getOverviewStats() ]);
           [friends, weekly, overview] = res;
-          // cache for modal & friends page
           friendsCache = friends;
-        } catch (e) {
-          console.error('[API fetch error]', e);
-        }
+        } catch (e) { console.error('[API fetch error]', e); }
 
         const stats = [
           { label:'Total Friends', value: String(overview.totalFriends), subtext:'Active connections', icon:'👥' },
@@ -126,7 +183,14 @@ document.addEventListener('DOMContentLoaded', () => {
           { label:'Need Attention', value: String(overview.needAttention), subtext:'Friends to reach out to', icon:'🗓️' },
         ];
 
-        const dashFriends = mapFriendsForDashboard(friends);
+        const dashFriends = friends.map(f => ({
+          name: f.name,
+          avatar: f.avatar,
+          lastContactDays: f.lastContactDays,
+          connection: f.connection,
+          interactions: f.interactions
+        }));
+
         renderDashboard(main, { stats, friends: dashFriends, weeklyActivity: weekly });
         try { drawWeeklyChart(weekly); } catch (e) { console.error('[Chart]', e); }
         break;
@@ -143,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>Add Friend</span>`;
         headerBtn.dataset.action = 'add-friend';
 
-        // refresh cache if empty
         if (!friendsCache || friendsCache.length === 0) {
           try { friendsCache = await getFriends(); } catch (e) { console.error('[getFriends]', e); }
         }
@@ -156,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
         pageSubtitle.textContent = 'Manage your application';
         headerBtn.innerHTML = '';
         headerBtn.dataset.action = 'none';
-
         renderSettingsPage(main);
         break;
       }
@@ -170,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nav) {
       e.preventDefault();
       const page = nav.dataset.page;
-      if (page === 'log') toggleModal(true);
+      if (page === 'log') toggleLogModal(true);
       else go(page);
       return;
     }
@@ -179,48 +241,57 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionBtn = e.target.closest('#header-action-button');
     if (actionBtn) {
       const action = actionBtn.dataset.action;
-      if (action === 'log') toggleModal(true);
-      else if (action === 'add-friend') alert('Add Friend form coming soon!');
+      if (action === 'log') toggleLogModal(true);
+      else if (action === 'add-friend') toggleAddFriendModal(true);
       return;
     }
 
-    // modal dismiss via Cancel/X/etc.
+    // dismiss modals (Cancel/X)
     if (e.target.closest('[data-dismiss="modal"]')) {
-      toggleModal(false);
+      toggleLogModal(false);
+      toggleAddFriendModal(false);
       return;
     }
 
-    // close by clicking overlay
-    if (e.target.id === 'log-modal') {
-      toggleModal(false);
-      return;
-    }
+    // close by clicking overlays
+    if (e.target.id === 'log-modal') { toggleLogModal(false); return; }
+    if (e.target.id === 'add-friend-modal') { toggleAddFriendModal(false); return; }
 
     // interaction type buttons
     const typeBtn = e.target.closest('.interaction-btn');
     if (typeBtn) {
-      const { typeBtns } = getModalEls();
+      const { typeBtns } = getLogModalEls();
       typeBtns.forEach(b => b.classList.remove('bg-primary-teal', 'text-white', 'selected'));
       typeBtn.classList.add('bg-primary-teal', 'text-white', 'selected');
-      selectedInteractionType = typeBtn.dataset.type; // meetup | call | video | text
+      selectedInteractionType = typeBtn.dataset.type;
       return;
     }
   });
 
-  // close on Esc
+  // Esc closes any open modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      const m = document.getElementById('log-modal');
-      if (m && !m.classList.contains('hidden')) toggleModal(false);
+      const lm = document.getElementById('log-modal');
+      const fm = document.getElementById('add-friend-modal');
+      if (lm && !lm.classList.contains('hidden')) toggleLogModal(false);
+      if (fm && !fm.classList.contains('hidden')) toggleAddFriendModal(false);
     }
   });
 
-  // modal submit
+  // modal submits (delegated)
   document.addEventListener('submit', async (e) => {
-    const form = e.target.closest('#log-form');
-    if (!form) return;
-    e.preventDefault();
-    await submitInteraction(form);
+    // Log Interaction form
+    if (e.target.closest('#log-form')) {
+      e.preventDefault();
+      await submitInteraction(e.target);
+      return;
+    }
+    // Add Friend form
+    if (e.target.closest('#add-friend-form')) {
+      e.preventDefault();
+      await submitAddFriend(e.target);
+      return;
+    }
   });
 
   // ----- init -----

@@ -1064,6 +1064,16 @@ video {
   color: rgb(220 38 38 / var(--tw-text-opacity, 1));
 }
 
+.text-red-500 {
+  --tw-text-opacity: 1;
+  color: rgb(239 68 68 / var(--tw-text-opacity, 1));
+}
+
+.text-red-600 {
+  --tw-text-opacity: 1;
+  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
+}
+
 .text-text-primary {
   --tw-text-opacity: 1;
   color: rgb(61 71 92 / var(--tw-text-opacity, 1));
@@ -1137,6 +1147,12 @@ video {
 .group:hover .group-hover\:text-text-primary {
   --tw-text-opacity: 1;
   color: rgb(61 71 92 / var(--tw-text-opacity, 1));
+}
+
+@media (min-width: 640px) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 768px) {
