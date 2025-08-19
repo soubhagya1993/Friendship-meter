@@ -1,48 +1,55 @@
 // frontend/src/js/api.js
+const API = 'http://127.0.0.1:5000'; // Flask base URL
 
-const API_BASE_URL = 'http://127.0.0.1:5000'; // Your Flask backend URL
+async function jfetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    // ok to send Content-Type for POST/PUT; harmless for GET
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts,
+  });
 
-/**
- * Fetches the list of friends from the backend.
- * @returns {Promise<Array>} A promise that resolves to the array of friend objects.
- */
-export async function fetchFriends() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/friends`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Failed to fetch friends:", error);
-        // Return an empty array in case of an error so the UI doesn't break
-        return [];
-    }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    // Throw so callers can handle/show an error
+    throw new Error(`${res.status} ${res.statusText} for ${path} • ${text}`);
+  }
+
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : null;
 }
 
-/**
- * Sends a new interaction to the backend.
- * @param {object} interactionData - The interaction data to save.
- * @returns {Promise<object>} A promise that resolves to the server's response.
- */
-export async function saveInteraction(interactionData) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/interactions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(interactionData),
-        });
+// ------- Friends -------
+export function getFriends() {
+  return jfetch('/api/friends');
+}
+export function addFriend(payload) {
+  return jfetch('/api/friends', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+export function updateFriend(id, payload) {
+  return jfetch(`/api/friends/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+export function deleteFriend(id) {
+  return jfetch(`/api/friends/${id}`, { method: 'DELETE' });
+}
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Failed to save interaction:", error);
-        // You could add user-facing error handling here
-        return null;
-    }
+// ------- Interactions -------
+export function saveInteraction(payload) {
+  return jfetch('/api/interactions', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ------- Stats -------
+export function getOverviewStats() {
+  return jfetch('/api/stats/overview');
+}
+export function getWeeklyActivity() {
+  return jfetch('/api/stats/weekly');
 }

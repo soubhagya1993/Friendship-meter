@@ -1,41 +1,135 @@
 # backend/app/routes.py
-from flask import Blueprint, jsonify
-from flask import Blueprint, jsonify, request # Import request
+from flask import Blueprint, request, jsonify
+from datetime import datetime, timedelta
+from .models import db, Friend, Interaction
 
 # Create a Blueprint
 api = Blueprint('api', __name__)
 
-@api.route('/api/test', methods=['GET'])
-def test_endpoint():
-    """A simple test endpoint to verify the backend is running."""
-    return jsonify({"message": "Hello from the Flask backend!"})
+FRIENDS = []        # [{ id, name, email, phone, preference, bio, avatar, ... }]
+INTERACTIONS = []   # [{ id, friendId, type, notes, occurred_at }]
+NEXT_FRIEND_ID = 1
+NEXT_INTERACTION_ID = 1
 
-# NEW ENDPOINT
-@api.route('/api/friends', methods=['GET'])
-def get_friends():
-    """Endpoint to get the list of friends for the dashboard."""
-    # This is mock data for now. We'll get this from a database later.
-    mock_friends = [
-        { 'id': 1, 'name': 'Saloni', 'lastContact': '3 weeks ago', 'avatar': 'https://placehold.co/96x96/FFA07A/36454F?text=A' },
-        { 'id': 2, 'name': 'Jessica Smith', 'lastContact': '1 month ago', 'avatar': 'https://placehold.co/96x96/4DB6AC/FFFFFF?text=J' },
-        { 'id': 3, 'name': 'Mike Ross', 'lastContact': '25 days ago', 'avatar': 'https://placehold.co/96x96/6495ED/FFFFFF?text=M' },
-        { 'id': 4, 'name': 'Sarah Lee', 'lastContact': '2 months ago', 'avatar': 'https://placehold.co/96x96/FFD700/36454F?text=S' },
-        { 'id': 5, 'name': 'Chris Green', 'lastContact': '19 days ago', 'avatar': 'https://placehold.co/96x96/36454F/FFFFFF?text=C' },
-    ]
-    return jsonify(mock_friends)
+def friend_by_id(fid):
+    return next((f for f in FRIENDS if f["id"] == fid), None)
 
-@api.route('/api/interactions', methods=['POST'])
-def log_interaction():
-    """Endpoint to log a new interaction."""
-    # Get the JSON data sent from the frontend
-    data = request.get_json()
+def friend_interactions(fid):
+    return [ix for ix in INTERACTIONS if ix["friendId"] == fid]
 
-    if not data:
-        return jsonify({"error": "Invalid data"}), 400
+def last_contact_days(fid):
+    ixs = friend_interactions(fid)
+    if not ixs:
+        return None
+    last = max(ixs, key=lambda x: x["occurred_at"])["occurred_at"].date()
+    return (datetime.utcnow().date() - last).days
 
-    # For now, we'll just print the data to the server console.
-    # Later, we will save this to a database.
-    print(f"Received new interaction: {data}")
+def interactions_count(fid):
+    return len(friend_interactions(fid))
 
-    # Send a success response back to the frontend
-    return jsonify({"message": "Interaction logged successfully!", "data": data}), 201
+def connection_strength(fid):
+    days = last_contact_days(fid)
+    days = 365 if days is None else days
+    # simple 0–100 score: recency (70) + volume (30)
+    recency = max(0.0, 1.0 - (days / 60.0)) * 70
+    volume = min(1.0, interactions_count(fid) / 20.0) * 30
+    return int(round(recency + volume))
+
+# ---------- FRIENDS ----------
+@api.route("/api/friends", methods=["GET"], strict_slashes=False)
+def list_friends():
+    def to_card(f):
+        fid = f["id"]
+        lc = last_contact_days(fid)
+        return {
+            "id": fid,
+            "name": f["name"],
+            "email": f.get("email"),
+            "phone": f.get("phone"),
+            "preference": f.get("preference") or "Text/Chat",
+            "bio": f.get("bio") or "",
+            "avatar": f.get("avatar") or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
+            "interactions": interactions_count(fid),
+            "lastContactDays": lc if lc is not None else 999,
+            "connection": connection_strength(fid),
+        }
+    return jsonify([to_card(f) for f in FRIENDS])
+
+@api.route("/api/friends", methods=["POST"], strict_slashes=False)
+def add_friend():
+    global NEXT_FRIEND_ID
+    data = request.get_json() or {}
+    friend = {
+        "id": NEXT_FRIEND_ID,
+        "name": data.get("name"),
+        "email": data.get("email"),
+        "phone": data.get("phone"),
+        "preference": data.get("preference") or "Text/Chat",
+        "bio": data.get("bio") or "",
+        "avatar": data.get("avatar") or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
+    }
+    NEXT_FRIEND_ID += 1
+    FRIENDS.append(friend)
+    return jsonify({"id": friend["id"]}), 201
+
+# ---------- INTERACTIONS ----------
+@api.route("/api/interactions", methods=["POST"], strict_slashes=False)
+def create_interaction():
+    global NEXT_INTERACTION_ID
+    data = request.get_json() or {}
+    fid = int(data["friendId"])
+    # Parse date (YYYY-MM-DD) or default to now
+    if data.get("date"):
+        occurred_at = datetime.fromisoformat(data["date"])
+    else:
+        occurred_at = datetime.utcnow()
+    ix = {
+        "id": NEXT_INTERACTION_ID,
+        "friendId": fid,
+        "type": (data.get("type") or "text").lower(),  # meetup|call|video|text
+        "notes": data.get("notes"),
+        "occurred_at": occurred_at
+    }
+    NEXT_INTERACTION_ID += 1
+    INTERACTIONS.append(ix)
+    return jsonify({"ok": True, "id": ix["id"]}), 201
+
+# ---------- STATS ----------
+@api.route("/api/stats/overview", methods=["GET"], strict_slashes=False)
+def stats_overview():
+    total_friends = len(FRIENDS)
+
+    week_start = datetime.utcnow().date() - timedelta(days=6)
+    week_start_dt = datetime.combine(week_start, datetime.min.time())
+    interactions_this_week = sum(1 for ix in INTERACTIONS if ix["occurred_at"] >= week_start_dt)
+
+    if total_friends:
+        avg_conn = int(round(sum(connection_strength(f["id"]) for f in FRIENDS) / total_friends))
+    else:
+        avg_conn = 0
+
+    need_attention = sum(
+        1 for f in FRIENDS
+        if (last_contact_days(f["id"]) or 999) > 21
+    )
+
+    return jsonify({
+        "totalFriends": total_friends,
+        "interactionsThisWeek": interactions_this_week,
+        "avgConnection": avg_conn,
+        "needAttention": need_attention
+    })
+
+@api.route("/api/stats/weekly", methods=["GET"], strict_slashes=False)
+def stats_weekly():
+    # last 7 days buckets from oldest..today
+    today = datetime.utcnow().date()
+    days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+    data = []
+    for d in days:
+        start = datetime.combine(d, datetime.min.time())
+        end   = datetime.combine(d, datetime.max.time())
+        c = sum(1 for ix in INTERACTIONS if start <= ix["occurred_at"] <= end)
+        data.append(c)
+    labels = [d.strftime("%a") for d in days]  # Mon..Sun
+    return jsonify({"labels": labels, "data": data})
