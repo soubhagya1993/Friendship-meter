@@ -13,7 +13,7 @@ import {
   getWeeklyActivity,
   saveInteraction,
   addFriend,
-  updateFriend, 
+  updateFriend,
   deleteFriend
 } from './api.js';
 
@@ -79,11 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ----- helpers (Add Friend modal) -----
+  // ----- helpers (Add/Edit Friend modal) -----
   function getAddFriendEls() {
     return {
       modal: document.getElementById('add-friend-modal'),
       form: document.getElementById('add-friend-form'),
+      id: document.getElementById('af-id'),         // hidden id field
       name: document.getElementById('af-name'),
       email: document.getElementById('af-email'),
       phone: document.getElementById('af-phone'),
@@ -96,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function toggleAddFriendModal(show) {
-    const { modal, form, error, title } = getAddFriendEls();
+    const { modal, form, error, title, id } = getAddFriendEls();
     if (!modal) return;
     if (show) {
       modal.classList.remove('hidden');
@@ -108,10 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.classList.add('hidden');
       modal.setAttribute('aria-hidden', 'true');
       form?.reset?.();
-      // reset mode to "Add" when closing
-      editingFriendId = null;
+      editingFriendId = null;          // reset edit state
+      if (id) id.value = '';           // clear hidden id
       if (title) title.textContent = 'Add Friend';
     }
+  }
+
+  // (1) Clean “open Add” helper: clears any edit state
+  function openAddFriend() {
+    const els = getAddFriendEls();
+    els.form?.reset?.();
+    if (els.id) els.id.value = '';
+    editingFriendId = null;
+    if (els.title) els.title.textContent = 'Add Friend';
+    toggleAddFriendModal(true);
   }
 
   function validateFriendForm() {
@@ -120,9 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return 'Email looks invalid.';
     if (phone.value && phone.value.length < 6) return 'Phone looks too short.';
     return null;
-    }
+  }
 
-  
   function openEditFriend(id) {
     const f = friendsCache.find(x => Number(x.id) === Number(id));
     if (!f) return;
@@ -130,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const els = getAddFriendEls();
     if (els.title) els.title.textContent = 'Edit Friend';
 
+    if (els.id) els.id.value = String(id);
     els.name.value = f.name || '';
     els.email.value = f.email || '';
     els.phone.value = f.phone || '';
@@ -141,12 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleAddFriendModal(true);
   }
 
+  // (3) Guard submit: treat “unknown id” as Add (not Edit)
   async function submitAddFriend(form) {
-    const { name, email, phone, pref, avatar, bio, error } = getAddFriendEls();
+    const { id, name, email, phone, pref, avatar, bio, error } = getAddFriendEls();
 
-    // basic validation
-    if (!name.value.trim()) {
-      error.textContent = 'Name is required.';
+    const msg = validateFriendForm();
+    if (msg) {
+      error.textContent = msg;
       error.classList.remove('hidden');
       return;
     }
@@ -160,9 +172,14 @@ document.addEventListener('DOMContentLoaded', () => {
       bio: bio.value.trim() || ''
     };
 
+    // Prefer hidden field; fallback to state var
+    const editIdRaw = id?.value ? Number(id.value) : (editingFriendId ?? null);
+    const editId = Number.isFinite(editIdRaw) ? editIdRaw : null;
+    const exists = editId && friendsCache.some(f => Number(f.id) === Number(editId));
+
     try {
-      if (editingFriendId) {
-        await updateFriend(editingFriendId, payload);
+      if (exists) {
+        await updateFriend(editId, payload);
       } else {
         await addFriend(payload);
       }
@@ -179,11 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {
       console.error('[add/update Friend]', e);
-      error.textContent = 'Failed to save friend. Please try again.';
+      if (String(e?.message).includes('404') && String(e?.message).toLowerCase().includes('not found')) {
+        try { friendsCache = await getFriends(); } catch {}
+        error.textContent = 'This friend no longer exists or the form had a stale id. Please try again.';
+      } else {
+        error.textContent = 'Failed to save friend. Please try again.';
+      }
       error.classList.remove('hidden');
     }
   }
- 
+
   async function handleDeleteFriend(id) {
     const friend = friendsCache.find(x => Number(x.id) === Number(id));
     const name = friend?.name || 'this friend';
@@ -191,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       await deleteFriend(id);
-      // refresh list
       friendsCache = friendsCache.filter(f => Number(f.id) !== Number(id));
       const active = document.querySelector('.nav-link.active-link')?.dataset.page;
       if (active === 'friends') {
@@ -204,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Failed to delete friend. Please try again.');
     }
   }
+
   // ----- router -----
   async function go(page) {
     document.querySelectorAll('.nav-link').forEach(a => {
@@ -292,12 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // header primary button
+    // (2) header primary button uses openAddFriend()
     const actionBtn = e.target.closest('#header-action-button');
     if (actionBtn) {
       const action = actionBtn.dataset.action;
       if (action === 'log') toggleLogModal(true);
-      else if (action === 'add-friend') toggleAddFriendModal(true);
+      else if (action === 'add-friend') openAddFriend();
       return;
     }
 
@@ -357,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await submitInteraction(e.target);
       return;
     }
-    // Add Friend form
+    // Add/Edit Friend form
     if (e.target.closest('#add-friend-form')) {
       e.preventDefault();
       await submitAddFriend(e.target);
