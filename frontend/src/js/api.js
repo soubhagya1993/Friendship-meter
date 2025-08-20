@@ -18,38 +18,51 @@ async function jfetch(path, opts = {}) {
   return ct.includes('application/json') ? res.json() : null;
 }
 
-// ------- Friends -------
-export function getFriends() {
-  return jfetch('/api/friends');
-}
-export function addFriend(payload) {
-  return jfetch('/api/friends', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-export function updateFriend(id, payload) {
-  return jfetch(`/api/friends/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-}
-export function deleteFriend(id) {
-  return jfetch(`/api/friends/${id}`, { method: 'DELETE' });
-}
+// Friends
+export const getFriends = () => jfetch('/api/friends');
+export const addFriend   = (p) => jfetch('/api/friends', { method:'POST', body: JSON.stringify(p) });
+export const updateFriend= (id,p)=> jfetch(`/api/friends/${id}`, { method:'PUT', body: JSON.stringify(p) });
+export const deleteFriend= (id) => jfetch(`/api/friends/${id}`, { method:'DELETE' });
 
-// ------- Interactions -------
-export function saveInteraction(payload) {
-  return jfetch('/api/interactions', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+// Interactions
+export const saveInteraction = (p) => jfetch('/api/interactions', { method:'POST', body: JSON.stringify(p) });
 
-// ------- Stats -------
-export function getOverviewStats() {
-  return jfetch('/api/stats/overview');
-}
-export function getWeeklyActivity() {
-  return jfetch('/api/stats/weekly');
-}
+// Stats
+export const getOverviewStats = () => jfetch('/api/stats/overview');
+export const getWeeklyActivity= () => jfetch('/api/stats/weekly');
+
+// // ------- Friends -------
+// export function getFriends() {
+//   return jfetch('/api/friends');
+// }
+// export function addFriend(payload) {
+//   return jfetch('/api/friends', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//   });
+// }
+// export function updateFriend(id, payload) {
+//   return jfetch(`/api/friends/${id}`, {
+//     method: 'PUT',
+//     body: JSON.stringify(payload),
+//   });
+// }
+// export function deleteFriend(id) {
+//   return jfetch(`/api/friends/${id}`, { method: 'DELETE' });
+// }
+
+// // ------- Interactions -------
+// export function saveInteraction(payload) {
+//   return jfetch('/api/interactions', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//   });
+// }
+
+// // ------- Stats -------
+// export function getOverviewStats() {
+//   return jfetch('/api/stats/overview');
+// }
+// export function getWeeklyActivity() {
+//   return jfetch('/api/stats/weekly');
+// }

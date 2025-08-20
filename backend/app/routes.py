@@ -133,3 +133,47 @@ def stats_weekly():
         data.append(c)
     labels = [d.strftime("%a") for d in days]  # Mon..Sun
     return jsonify({"labels": labels, "data": data})
+
+# --- UPDATE FRIEND ---
+@api.route("/api/friends/<int:fid>", methods=["PUT","PATCH"], strict_slashes=False)
+def update_friend(fid):
+    f = next((x for x in FRIENDS if x["id"] == fid), None)
+    if not f:
+        return jsonify({"error": "not found"}), 404
+    data = request.get_json() or {}
+    for k in ["name", "email", "phone", "preference", "bio", "avatar"]:
+        if k in data:
+            f[k] = data[k]
+    return jsonify({"ok": True})
+
+# --- DELETE FRIEND ---
+@api.route("/api/friends/<int:fid>", methods=["DELETE"], strict_slashes=False)
+def delete_friend(fid):
+    global FRIENDS, INTERACTIONS
+    before = len(FRIENDS)
+    FRIENDS = [x for x in FRIENDS if x["id"] != fid]
+    INTERACTIONS = [ix for ix in INTERACTIONS if ix["friendId"] != fid]
+    if len(FRIENDS) == before:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"ok": True})
+
+# @api.route("/api/friends/<int:fid>", methods=["PUT","PATCH"])
+# def update_friend(fid):
+#     f = Friend.query.get_or_404(fid)
+#     data = request.get_json() or {}
+#     # accepted fields
+#     for k in ["name","email","phone","preference","bio","avatar"]:
+#         if k in data:
+#             if k == "avatar": 
+#                 f.avatar_url = data[k]
+#             else:
+#                 setattr(f, k, data[k])
+#     db.session.commit()
+#     return jsonify({"ok": True})
+
+# @api.route("/api/friends/<int:fid>", methods=["DELETE"])
+# def delete_friend(fid):
+#     f = Friend.query.get_or_404(fid)
+#     db.session.delete(f)
+#     db.session.commit()
+#     return jsonify({"ok": True})

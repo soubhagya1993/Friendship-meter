@@ -123,7 +123,7 @@ export function renderSettingsPage(container) {
   container.innerHTML = settingsContent;
 }
 
-function createManageFriendCard({ name, avatar, email, phone, preference, bio, interactions, lastContactDays }) {
+function createManageFriendCard({ id, name, avatar, email, phone, preference, bio, interactions, lastContactDays }) {
   const av = avatar || 'https://placehold.co/48x48?text=FM';
   return `
     <div class="bg-card-beige p-6 rounded-xl border border-border-soft space-y-4">
@@ -137,17 +137,32 @@ function createManageFriendCard({ name, avatar, email, phone, preference, bio, i
           </div>
         </div>
         <div class="flex space-x-2">
-          <button class="p-2 hover:bg-gray-200 rounded-md" title="Edit">
-            <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+          <button class="p-2 hover:bg-gray-200 rounded-md"
+                  title="Edit"
+                  data-role="edit-friend"
+                  data-friend-id="${id}">
+            <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
           </button>
-          <button class="p-2 hover:bg-gray-200 rounded-md" title="Delete">
-            <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <button class="p-2 hover:bg-gray-200 rounded-md"
+                  title="Delete"
+                  data-role="delete-friend"
+                  data-friend-id="${id}">
+            <svg class="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
           </button>
         </div>
       </div>
       <div>
         <div class="flex items-center text-sm text-text-secondary mb-3">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+          </svg>
           <span>Prefers ${preference || 'Text/Chat'}</span>
         </div>
         <p class="text-sm text-text-secondary bg-background-beige p-3 rounded-md">${bio || ''}</p>

@@ -12,7 +12,9 @@ import {
   getOverviewStats,
   getWeeklyActivity,
   saveInteraction,
-  addFriend
+  addFriend,
+  updateFriend, 
+  deleteFriend
 } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----- state -----
   let friendsCache = [];
   let selectedInteractionType = null;
+  let editingFriendId = null;
 
   // ----- helpers (Log Interaction modal) -----
   function getLogModalEls() {
@@ -88,11 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar: document.getElementById('af-avatar'),
       bio: document.getElementById('af-bio'),
       error: document.getElementById('af-error'),
+      title: document.querySelector('#add-friend-modal h2'),
     };
   }
 
   function toggleAddFriendModal(show) {
-    const { modal, form, error } = getAddFriendEls();
+    const { modal, form, error, title } = getAddFriendEls();
     if (!modal) return;
     if (show) {
       modal.classList.remove('hidden');
@@ -104,6 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.classList.add('hidden');
       modal.setAttribute('aria-hidden', 'true');
       form?.reset?.();
+      // reset mode to "Add" when closing
+      editingFriendId = null;
+      if (title) title.textContent = 'Add Friend';
     }
   }
 
@@ -115,14 +122,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
     }
 
+  
+  function openEditFriend(id) {
+    const f = friendsCache.find(x => Number(x.id) === Number(id));
+    if (!f) return;
+
+    const els = getAddFriendEls();
+    if (els.title) els.title.textContent = 'Edit Friend';
+
+    els.name.value = f.name || '';
+    els.email.value = f.email || '';
+    els.phone.value = f.phone || '';
+    els.pref.value = f.preference || 'Text/Chat';
+    els.avatar.value = f.avatar || '';
+    els.bio.value = f.bio || '';
+
+    editingFriendId = Number(id);
+    toggleAddFriendModal(true);
+  }
+
   async function submitAddFriend(form) {
     const { name, email, phone, pref, avatar, bio, error } = getAddFriendEls();
-    const msg = validateFriendForm();
-    if (msg) {
-      error.textContent = msg;
+
+    // basic validation
+    if (!name.value.trim()) {
+      error.textContent = 'Name is required.';
       error.classList.remove('hidden');
       return;
     }
+
     const payload = {
       name: name.value.trim(),
       email: email.value.trim() || null,
@@ -133,22 +161,49 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      await addFriend(payload);
+      if (editingFriendId) {
+        await updateFriend(editingFriendId, payload);
+      } else {
+        await addFriend(payload);
+      }
+
       toggleAddFriendModal(false);
-      // refresh data
+
+      // refresh whichever page is active
       const active = document.querySelector('.nav-link.active-link')?.dataset.page;
       if (active === 'friends') {
-        await go('friends');
+        friendsCache = await getFriends();
+        renderFriendsPage(document.getElementById('main-content'), friendsCache);
       } else {
         await go('dashboard');
       }
     } catch (e) {
-      console.error('[addFriend]', e);
+      console.error('[add/update Friend]', e);
       error.textContent = 'Failed to save friend. Please try again.';
       error.classList.remove('hidden');
     }
   }
+ 
+  async function handleDeleteFriend(id) {
+    const friend = friendsCache.find(x => Number(x.id) === Number(id));
+    const name = friend?.name || 'this friend';
+    if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
 
+    try {
+      await deleteFriend(id);
+      // refresh list
+      friendsCache = friendsCache.filter(f => Number(f.id) !== Number(id));
+      const active = document.querySelector('.nav-link.active-link')?.dataset.page;
+      if (active === 'friends') {
+        renderFriendsPage(document.getElementById('main-content'), friendsCache);
+      } else {
+        await go('dashboard');
+      }
+    } catch (e) {
+      console.error('[deleteFriend]', e);
+      alert('Failed to delete friend. Please try again.');
+    }
+  }
   // ----- router -----
   async function go(page) {
     document.querySelectorAll('.nav-link').forEach(a => {
@@ -243,6 +298,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const action = actionBtn.dataset.action;
       if (action === 'log') toggleLogModal(true);
       else if (action === 'add-friend') toggleAddFriendModal(true);
+      return;
+    }
+
+    // Edit button on friend card
+    const editBtn = e.target.closest('[data-role="edit-friend"]');
+    if (editBtn) {
+      const id = editBtn.getAttribute('data-friend-id');
+      openEditFriend(id);
+      return;
+    }
+
+    // Delete button on friend card
+    const delBtn = e.target.closest('[data-role="delete-friend"]');
+    if (delBtn) {
+      const id = delBtn.getAttribute('data-friend-id');
+      handleDeleteFriend(id);
       return;
     }
 
