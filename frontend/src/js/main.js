@@ -17,6 +17,8 @@ import {
   deleteFriend
 } from './api.js';
 
+import { toast } from './toast.js';
+
 document.addEventListener('DOMContentLoaded', () => {
   // ----- persistent DOM -----
   const main = document.getElementById('main-content');
@@ -70,12 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
       notes: ''
     };
     try {
+      // await saveInteraction(payload);
+      // toggleLogModal(false);
+      // await go('dashboard'); // refresh stats + chart
       await saveInteraction(payload);
       toggleLogModal(false);
+      toast({ type:'success', message:'Interaction logged' });
       await go('dashboard'); // refresh stats + chart
     } catch (e) {
+      // console.error('[saveInteraction]', e);
+      // alert('Failed to log interaction. Please try again.');
       console.error('[saveInteraction]', e);
-      alert('Failed to log interaction. Please try again.');
+      toast({ type:'error', message:'Failed to log interaction' });
     }
   }
 
@@ -160,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (msg) {
       error.textContent = msg;
       error.classList.remove('hidden');
+      toast({ type:'warning', message: msg });
       return;
     }
 
@@ -180,8 +189,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (exists) {
         await updateFriend(editId, payload);
+        toast({ type:'success', message:'Friend updated' });
       } else {
         await addFriend(payload);
+        toast({ type:'success', message:'Friend added' });
       }
 
       toggleAddFriendModal(false);
@@ -199,8 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (String(e?.message).includes('404') && String(e?.message).toLowerCase().includes('not found')) {
         try { friendsCache = await getFriends(); } catch {}
         error.textContent = 'This friend no longer exists or the form had a stale id. Please try again.';
+        toast({ type:'error', message:'Could not save (stale id)' });
       } else {
         error.textContent = 'Failed to save friend. Please try again.';
+        toast({ type:'error', message:'Failed to save friend' });
       }
       error.classList.remove('hidden');
     }
@@ -220,9 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         await go('dashboard');
       }
+      toast({ type:'success', message:'Friend deleted' });
     } catch (e) {
       console.error('[deleteFriend]', e);
-      alert('Failed to delete friend. Please try again.');
+      // alert('Failed to delete friend. Please try again.');
+      toast({ type:'error', message:'Failed to delete friend' });
     }
   }
 
