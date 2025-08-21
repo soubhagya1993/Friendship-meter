@@ -31,6 +31,23 @@ export const saveInteraction = (p) => jfetch('/api/interactions', { method:'POST
 export const getOverviewStats = () => jfetch('/api/stats/overview');
 export const getWeeklyActivity= () => jfetch('/api/stats/weekly');
 
+
+// newly added functions
+export async function getInteractions() {
+  return jfetch("/api/interactions");
+}
+
+export async function addInteraction(data) {
+  return jfetch("/api/interactions", {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteInteraction(id) {
+  return jfetch(`/api/interactions/${id}`, { method: "DELETE" });
+}
+
 // // ------- Friends -------
 // export function getFriends() {
 //   return jfetch('/api/friends');

@@ -94,6 +94,35 @@ def create_interaction():
     INTERACTIONS.append(ix)
     return jsonify({"ok": True, "id": ix["id"]}), 201
 
+@api.route("/api/interactions", methods=["GET"], strict_slashes=False)
+def list_interactions():
+    interactions = Interaction.query.order_by(Interaction.occurred_at.desc()).all()
+    return jsonify([i.to_dict() for i in interactions])
+
+@api.route("/api/interactions", methods=["POST"], strict_slashes=False)
+def add_interaction():
+    data = request.get_json() or {}
+    f_id = data.get("friendId")
+    friend = Friend.query.get_or_404(f_id)
+
+    interaction = Interaction(
+        friend_id=f_id,
+        type=data.get("type"),
+        notes=data.get("notes"),
+        occurred_at=datetime.fromisoformat(data.get("occurredAt"))
+            if data.get("occurredAt") else datetime.utcnow()
+    )
+    db.session.add(interaction)
+    db.session.commit()
+    return jsonify(interaction.to_dict()), 201
+
+@api.route("/api/interactions/<int:interaction_id>", methods=["DELETE"], strict_slashes=False)
+def delete_interaction(interaction_id):
+    i = Interaction.query.get_or_404(interaction_id)
+    db.session.delete(i)
+    db.session.commit()
+    return jsonify({"ok": True})
+
 # ---------- STATS ----------
 @api.route("/api/stats/overview", methods=["GET"], strict_slashes=False)
 def stats_overview():

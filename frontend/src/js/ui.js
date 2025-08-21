@@ -237,3 +237,41 @@ export function drawWeeklyChart(weeklyData) {
     }
   });
 }
+
+export function renderInteractionsPage(container, interactions = []) {
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="p-4 space-y-4">
+      <h2 class="text-xl font-semibold">All Interactions</h2>
+      ${
+        interactions.length === 0
+          ? `<p class="text-gray-500">No interactions logged yet.</p>`
+          : `<ul class="divide-y divide-gray-200">
+              ${interactions
+                .map(
+                  (i) => `
+                <li class="flex items-center justify-between py-3">
+                  <div>
+                    <p class="font-medium">${i.type} with Friend #${i.friendId}</p>
+                    <p class="text-sm text-gray-500">${new Date(
+                      i.occurredAt
+                    ).toLocaleString()}</p>
+                    ${
+                      i.notes
+                        ? `<p class="text-sm text-gray-700 italic">${i.notes}</p>`
+                        : ""
+                    }
+                  </div>
+                  <button data-role="delete-interaction" data-id="${i.id}"
+                    class="px-2 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200">
+                    Delete
+                  </button>
+                </li>`
+                )
+                .join("")}
+            </ul>`
+      }
+    </div>
+  `;
+}
