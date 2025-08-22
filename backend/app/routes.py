@@ -3,206 +3,175 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from .models import db, Friend, Interaction
 
-# Create a Blueprint
-api = Blueprint('api', __name__)
+api = Blueprint("api", __name__)
 
-FRIENDS = []        # [{ id, name, email, phone, preference, bio, avatar, ... }]
-INTERACTIONS = []   # [{ id, friendId, type, notes, occurred_at }]
-NEXT_FRIEND_ID = 1
-NEXT_INTERACTION_ID = 1
-
-def friend_by_id(fid):
-    return next((f for f in FRIENDS if f["id"] == fid), None)
-
-def friend_interactions(fid):
-    return [ix for ix in INTERACTIONS if ix["friendId"] == fid]
-
-def last_contact_days(fid):
-    ixs = friend_interactions(fid)
-    if not ixs:
+# ---------- HELPERS ----------
+def last_contact_days(friend_id: int):
+    """Return days since last interaction for a friend, or None if never."""
+    last = (
+        Interaction.query.filter_by(friend_id=friend_id)
+        .order_by(Interaction.occurred_at.desc())
+        .first()
+    )
+    if not last:
         return None
-    last = max(ixs, key=lambda x: x["occurred_at"])["occurred_at"].date()
-    return (datetime.utcnow().date() - last).days
+    return (datetime.utcnow().date() - last.occurred_at.date()).days
 
-def interactions_count(fid):
-    return len(friend_interactions(fid))
 
-def connection_strength(fid):
-    days = last_contact_days(fid)
+def interactions_count(friend_id: int):
+    """Return number of interactions for a friend."""
+    return Interaction.query.filter_by(friend_id=friend_id).count()
+
+
+def connection_strength(friend_id: int):
+    """
+    Compute connection score (0–100).
+    Based on recency (70%) and volume (30%).
+    """
+    days = last_contact_days(friend_id)
     days = 365 if days is None else days
-    # simple 0–100 score: recency (70) + volume (30)
     recency = max(0.0, 1.0 - (days / 60.0)) * 70
-    volume = min(1.0, interactions_count(fid) / 20.0) * 30
+    volume = min(1.0, interactions_count(friend_id) / 20.0) * 30
     return int(round(recency + volume))
+
 
 # ---------- FRIENDS ----------
 @api.route("/api/friends", methods=["GET"], strict_slashes=False)
 def list_friends():
-    def to_card(f):
-        fid = f["id"]
-        lc = last_contact_days(fid)
-        return {
-            "id": fid,
-            "name": f["name"],
-            "email": f.get("email"),
-            "phone": f.get("phone"),
-            "preference": f.get("preference") or "Text/Chat",
-            "bio": f.get("bio") or "",
-            "avatar": f.get("avatar") or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
-            "interactions": interactions_count(fid),
-            "lastContactDays": lc if lc is not None else 999,
-            "connection": connection_strength(fid),
-        }
-    return jsonify([to_card(f) for f in FRIENDS])
+    friends = Friend.query.all()
+    return jsonify([f.to_dict() for f in friends])
+
 
 @api.route("/api/friends", methods=["POST"], strict_slashes=False)
 def add_friend():
-    global NEXT_FRIEND_ID
     data = request.get_json() or {}
-    friend = {
-        "id": NEXT_FRIEND_ID,
-        "name": data.get("name"),
-        "email": data.get("email"),
-        "phone": data.get("phone"),
-        "preference": data.get("preference") or "Text/Chat",
-        "bio": data.get("bio") or "",
-        "avatar": data.get("avatar") or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
-    }
-    NEXT_FRIEND_ID += 1
-    FRIENDS.append(friend)
-    return jsonify({"id": friend["id"]}), 201
+
+    if not data.get("name"):
+        return jsonify({"error": "Name is required"}), 400
+
+    friend = Friend(
+        name=data.get("name"),
+        email=data.get("email"),
+        phone=data.get("phone"),
+        preference=data.get("preference"),
+        bio=data.get("bio"),
+        avatar=data.get("avatar") or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
+    )
+    db.session.add(friend)
+    db.session.commit()
+
+    return jsonify(friend.to_dict()), 201
+
+
+@api.route("/api/friends/<int:fid>", methods=["PUT", "PATCH"], strict_slashes=False)
+def update_friend(fid):
+    friend = Friend.query.get_or_404(fid)
+    data = request.get_json() or {}
+
+    for k in ["name", "email", "phone", "preference", "bio", "avatar_url"]:
+        if k in data:
+            setattr(friend, k, data[k])
+
+    db.session.commit()
+    return jsonify(friend.to_dict())
+
+
+# --- DELETE FRIEND ---
+@api.route("/api/friends/<int:fid>", methods=["DELETE"], strict_slashes=False)
+def delete_friend(fid):
+    friend = Friend.query.get_or_404(fid)
+    db.session.delete(friend)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 # ---------- INTERACTIONS ----------
-@api.route("/api/interactions", methods=["POST"], strict_slashes=False)
-def create_interaction():
-    global NEXT_INTERACTION_ID
-    data = request.get_json() or {}
-    fid = int(data["friendId"])
-    # Parse date (YYYY-MM-DD) or default to now
-    if data.get("date"):
-        occurred_at = datetime.fromisoformat(data["date"])
-    else:
-        occurred_at = datetime.utcnow()
-    ix = {
-        "id": NEXT_INTERACTION_ID,
-        "friendId": fid,
-        "type": (data.get("type") or "text").lower(),  # meetup|call|video|text
-        "notes": data.get("notes"),
-        "occurred_at": occurred_at
-    }
-    NEXT_INTERACTION_ID += 1
-    INTERACTIONS.append(ix)
-    return jsonify({"ok": True, "id": ix["id"]}), 201
-
-@api.route("/api/interactions", methods=["GET"], strict_slashes=False)
+@api.route("/api/interactions", methods=["GET"])
 def list_interactions():
-    interactions = Interaction.query.order_by(Interaction.occurred_at.desc()).all()
+    interactions = Interaction.query.order_by(
+        Interaction.occurred_at.desc()
+    ).all()
     return jsonify([i.to_dict() for i in interactions])
 
-@api.route("/api/interactions", methods=["POST"], strict_slashes=False)
+
+@api.route("/api/interactions", methods=["POST"])
 def add_interaction():
     data = request.get_json() or {}
     f_id = data.get("friendId")
-    friend = Friend.query.get_or_404(f_id)
+    Friend.query.get_or_404(f_id)  # validate friend exists
+
+    occurred_at = (
+        datetime.fromisoformat(data.get("occurredAt"))
+        if data.get("occurredAt")
+        else datetime.utcnow()
+    )
 
     interaction = Interaction(
         friend_id=f_id,
         type=data.get("type"),
         notes=data.get("notes"),
-        occurred_at=datetime.fromisoformat(data.get("occurredAt"))
-            if data.get("occurredAt") else datetime.utcnow()
+        occurred_at=occurred_at,
     )
     db.session.add(interaction)
     db.session.commit()
     return jsonify(interaction.to_dict()), 201
 
-@api.route("/api/interactions/<int:interaction_id>", methods=["DELETE"], strict_slashes=False)
+
+@api.route("/api/interactions/<int:interaction_id>", methods=["DELETE"])
 def delete_interaction(interaction_id):
     i = Interaction.query.get_or_404(interaction_id)
     db.session.delete(i)
     db.session.commit()
     return jsonify({"ok": True})
 
+
 # ---------- STATS ----------
-@api.route("/api/stats/overview", methods=["GET"], strict_slashes=False)
+@api.route("/api/stats/overview", methods=["GET"])
 def stats_overview():
-    total_friends = len(FRIENDS)
+    total_friends = Friend.query.count()
 
     week_start = datetime.utcnow().date() - timedelta(days=6)
     week_start_dt = datetime.combine(week_start, datetime.min.time())
-    interactions_this_week = sum(1 for ix in INTERACTIONS if ix["occurred_at"] >= week_start_dt)
+    interactions_this_week = Interaction.query.filter(
+        Interaction.occurred_at >= week_start_dt
+    ).count()
 
     if total_friends:
-        avg_conn = int(round(sum(connection_strength(f["id"]) for f in FRIENDS) / total_friends))
+        avg_conn = int(
+            round(
+                sum(connection_strength(f.id) for f in Friend.query.all())
+                / total_friends
+            )
+        )
     else:
         avg_conn = 0
 
     need_attention = sum(
-        1 for f in FRIENDS
-        if (last_contact_days(f["id"]) or 999) > 21
+        1
+        for f in Friend.query.all()
+        if (last_contact_days(f.id) or 999) > 21
     )
 
-    return jsonify({
-        "totalFriends": total_friends,
-        "interactionsThisWeek": interactions_this_week,
-        "avgConnection": avg_conn,
-        "needAttention": need_attention
-    })
+    return jsonify(
+        {
+            "totalFriends": total_friends,
+            "interactionsThisWeek": interactions_this_week,
+            "avgConnection": avg_conn,
+            "needAttention": need_attention,
+        }
+    )
 
-@api.route("/api/stats/weekly", methods=["GET"], strict_slashes=False)
+
+@api.route("/api/stats/weekly", methods=["GET"])
 def stats_weekly():
-    # last 7 days buckets from oldest..today
     today = datetime.utcnow().date()
     days = [today - timedelta(days=i) for i in range(6, -1, -1)]
     data = []
     for d in days:
         start = datetime.combine(d, datetime.min.time())
-        end   = datetime.combine(d, datetime.max.time())
-        c = sum(1 for ix in INTERACTIONS if start <= ix["occurred_at"] <= end)
-        data.append(c)
-    labels = [d.strftime("%a") for d in days]  # Mon..Sun
+        end = datetime.combine(d, datetime.max.time())
+        count = Interaction.query.filter(
+            Interaction.occurred_at.between(start, end)
+        ).count()
+        data.append(count)
+    labels = [d.strftime("%a") for d in days]
     return jsonify({"labels": labels, "data": data})
-
-# --- UPDATE FRIEND ---
-@api.route("/api/friends/<int:fid>", methods=["PUT","PATCH"], strict_slashes=False)
-def update_friend(fid):
-    f = next((x for x in FRIENDS if x["id"] == fid), None)
-    if not f:
-        return jsonify({"error": "not found"}), 404
-    data = request.get_json() or {}
-    for k in ["name", "email", "phone", "preference", "bio", "avatar"]:
-        if k in data:
-            f[k] = data[k]
-    return jsonify({"ok": True})
-
-# --- DELETE FRIEND ---
-@api.route("/api/friends/<int:fid>", methods=["DELETE"], strict_slashes=False)
-def delete_friend(fid):
-    global FRIENDS, INTERACTIONS
-    before = len(FRIENDS)
-    FRIENDS = [x for x in FRIENDS if x["id"] != fid]
-    INTERACTIONS = [ix for ix in INTERACTIONS if ix["friendId"] != fid]
-    if len(FRIENDS) == before:
-        return jsonify({"error": "not found"}), 404
-    return jsonify({"ok": True})
-
-# @api.route("/api/friends/<int:fid>", methods=["PUT","PATCH"])
-# def update_friend(fid):
-#     f = Friend.query.get_or_404(fid)
-#     data = request.get_json() or {}
-#     # accepted fields
-#     for k in ["name","email","phone","preference","bio","avatar"]:
-#         if k in data:
-#             if k == "avatar": 
-#                 f.avatar_url = data[k]
-#             else:
-#                 setattr(f, k, data[k])
-#     db.session.commit()
-#     return jsonify({"ok": True})
-
-# @api.route("/api/friends/<int:fid>", methods=["DELETE"])
-# def delete_friend(fid):
-#     f = Friend.query.get_or_404(fid)
-#     db.session.delete(f)
-#     db.session.commit()
-#     return jsonify({"ok": True})
