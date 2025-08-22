@@ -2,3 +2,4 @@ frontend/node_modules/
 backend/instance/
 backend/venv/
 *.env
+/backend/config.py

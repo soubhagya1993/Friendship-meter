@@ -240,6 +240,32 @@ export function drawWeeklyChart(weeklyData) {
 
 
 /**
+ * Map interaction type → Tailwind badge styles
+ */
+function getInteractionBadge(type) {
+  const styles = {
+    meetup: "bg-blue-100 text-blue-700",
+    call: "bg-green-100 text-green-700",
+    video: "bg-purple-100 text-purple-700",
+    text: "bg-yellow-100 text-yellow-700",
+    default: "bg-gray-200 text-gray-700"
+  };
+
+  const icons = {
+    meetup: "📅",
+    call: "📞",
+    video: "📹",
+    text: "✉️",
+    default: "🔖"
+  };
+
+  const key = (type || "").toLowerCase();
+  return `<span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded ${styles[key] || styles.default}">
+    ${icons[key] || icons.default} ${type || "Other"}
+  </span>`;
+}
+
+/**
  * Interactions page.
  */
 export function renderInteractionsPage(container, interactions = [], friends = []) {
@@ -251,32 +277,39 @@ export function renderInteractionsPage(container, interactions = [], friends = [
       ${
         interactions.length === 0
           ? `<p class="text-gray-500">No interactions logged yet.</p>`
-          : `<ul class="divide-y divide-gray-200">
+          : `<div class="space-y-4">
               ${interactions
                 .map((i) => {
                   const friend = (friends || []).find((f) => f.id === i.friendId);
                   const friendName = friend ? friend.name : `Friend #${i.friendId}`;
                   return `
-                    <li class="flex items-center justify-between py-3">
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-100">
                       <div>
-                        <p class="font-medium">${i.type} with ${friendName}</p>
-                        <p class="text-sm text-gray-500">${new Date(i.occurredAt).toLocaleString()}</p>
-                        ${i.notes ? `<p class="text-sm text-gray-700 italic">${i.notes}</p>` : ""}
+                        <div class="flex items-center space-x-2">
+                          <p class="font-medium text-gray-800">
+                            ${i.type} with 
+                            <span class="text-primary-teal font-semibold">${friendName}</span>
+                          </p>
+                          ${getInteractionBadge(i.type)}
+                        </div>
+                        <p class="text-sm text-gray-500">
+                          ${new Date(i.occurredAt).toLocaleString()}
+                        </p>
+                        ${i.notes ? `<p class="text-sm text-gray-700 italic mt-1">${i.notes}</p>` : ""}
                       </div>
                       <button data-role="delete-interaction" data-id="${i.id}"
-                        class="px-2 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200">
+                        class="px-3 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200">
                         Delete
                       </button>
-                    </li>
+                    </div>
                   `;
                 })
                 .join("")}
-            </ul>`
+            </div>`
       }
     </div>
   `;
 }
-
 
 // export function renderInteractionsPage(container) {
 //   if (!container) return;
