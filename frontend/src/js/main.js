@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       friendId: Number(friendId),
       type: selectedInteractionType,
-      date: new Date().toISOString().slice(0, 10),
+      occurredAt: new Date().toISOString(),   // ✅ match backend expectation
       notes: ''
     };
     try {
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
           interactions = await getInteractions();
         } catch (e) { console.error('[getInteractions]', e); }
 
-        renderInteractionsPage(main, interactions);
+        renderInteractionsPage(main, interactions, friendsCache);
         break;
       }
 
