@@ -10,7 +10,7 @@ import {
 
 import {
   getFriends,
-  getInteractions,
+  getInteractions, 
   addInteraction, 
   deleteInteraction,
   getOverviewStats,
@@ -76,16 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
       notes: ''
     };
     try {
-      // await saveInteraction(payload);
-      // toggleLogModal(false);
-      // await go('dashboard'); // refresh stats + chart
       await saveInteraction(payload);
       toggleLogModal(false);
       toast({ type:'success', message:'Interaction logged' });
       await go('dashboard'); // refresh stats + chart
     } catch (e) {
-      // console.error('[saveInteraction]', e);
-      // alert('Failed to log interaction. Please try again.');
       console.error('[saveInteraction]', e);
       toast({ type:'error', message:'Failed to log interaction' });
     }
@@ -121,13 +116,12 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.classList.add('hidden');
       modal.setAttribute('aria-hidden', 'true');
       form?.reset?.();
-      editingFriendId = null;          // reset edit state
-      if (id) id.value = '';           // clear hidden id
+      editingFriendId = null;
+      if (id) id.value = '';
       if (title) title.textContent = 'Add Friend';
     }
   }
 
-  // (1) Clean “open Add” helper: clears any edit state
   function openAddFriend() {
     const els = getAddFriendEls();
     els.form?.reset?.();
@@ -164,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleAddFriendModal(true);
   }
 
-  // (3) Guard submit: treat “unknown id” as Add (not Edit)
   async function submitAddFriend(form) {
     const { id, name, email, phone, pref, avatar, bio, error } = getAddFriendEls();
 
@@ -185,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
       bio: bio.value.trim() || ''
     };
 
-    // Prefer hidden field; fallback to state var
     const editIdRaw = id?.value ? Number(id.value) : (editingFriendId ?? null);
     const editId = Number.isFinite(editIdRaw) ? editIdRaw : null;
     const exists = editId && friendsCache.some(f => Number(f.id) === Number(editId));
@@ -201,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       toggleAddFriendModal(false);
 
-      // refresh whichever page is active
       const active = document.querySelector('.nav-link.active-link')?.dataset.page;
       if (active === 'friends') {
         friendsCache = await getFriends();
@@ -211,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {
       console.error('[add/update Friend]', e);
-      if (String(e?.message).includes('404') && String(e?.message).toLowerCase().includes('not found')) {
+      if (String(e?.message).includes('404')) {
         try { friendsCache = await getFriends(); } catch {}
         error.textContent = 'This friend no longer exists or the form had a stale id. Please try again.';
         toast({ type:'error', message:'Could not save (stale id)' });
@@ -240,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
       toast({ type:'success', message:'Friend deleted' });
     } catch (e) {
       console.error('[deleteFriend]', e);
-      // alert('Failed to delete friend. Please try again.');
       toast({ type:'error', message:'Failed to delete friend' });
     }
   }
@@ -311,23 +301,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       case 'interactions': {
-        pageTitle.textContent = 'Interaction History';
-        pageSubtitle.textContent = 'See and manage all past interactions';
-        headerBtn.innerHTML = `
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <span>Log Interaction</span>`;
-        headerBtn.dataset.action = 'log';
+        pageTitle.textContent = 'Interactions';
+        pageSubtitle.textContent = 'Browse all your logged interactions';
+        headerBtn.innerHTML = '';
+        headerBtn.dataset.action = 'none';
 
+        let interactions = [];
         try {
-          const interactions = await getInteractions();
-          renderInteractionsPage(main, interactions);
-        } catch (e) {
-          console.error('[getInteractions]', e);
-          main.innerHTML = `<p class="text-red-600">Failed to load interactions.</p>`;
-        }
+          interactions = await getInteractions();
+        } catch (e) { console.error('[getInteractions]', e); }
+
+        renderInteractionsPage(main, interactions);
         break;
       }
 
@@ -349,12 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nav) {
       e.preventDefault();
       const page = nav.dataset.page;
-      if (page === 'log') toggleLogModal(true);
-      else go(page);
+      go(page);
       return;
     }
 
-    // (2) header primary button uses openAddFriend()
+    // header button
     const actionBtn = e.target.closest('#header-action-button');
     if (actionBtn) {
       const action = actionBtn.dataset.action;
@@ -363,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Edit button on friend card
+    // edit friend
     const editBtn = e.target.closest('[data-role="edit-friend"]');
     if (editBtn) {
       const id = editBtn.getAttribute('data-friend-id');
@@ -371,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Delete button on friend card
+    // delete friend
     const delBtn = e.target.closest('[data-role="delete-friend"]');
     if (delBtn) {
       const id = delBtn.getAttribute('data-friend-id');
@@ -379,18 +362,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // dismiss modals (Cancel/X)
+    // dismiss modals
     if (e.target.closest('[data-dismiss="modal"]')) {
       toggleLogModal(false);
       toggleAddFriendModal(false);
       return;
     }
 
-    // close by clicking overlays
+    // overlay close
     if (e.target.id === 'log-modal') { toggleLogModal(false); return; }
     if (e.target.id === 'add-friend-modal') { toggleAddFriendModal(false); return; }
 
-    // interaction type buttons
+    // interaction type select
     const typeBtn = e.target.closest('.interaction-btn');
     if (typeBtn) {
       const { typeBtns } = getLogModalEls();
@@ -399,9 +382,24 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedInteractionType = typeBtn.dataset.type;
       return;
     }
+
+    // delete interaction
+    const delInteractionBtn = e.target.closest('[data-role="delete-interaction"]');
+    if (delInteractionBtn) {
+      const id = delInteractionBtn.dataset.id;
+      if (confirm('Delete this interaction?')) {
+        deleteInteraction(id).then(() => {
+          toast({ type:'success', message:'Interaction deleted' });
+          go('interactions');
+        }).catch(err => {
+          console.error('[deleteInteraction]', err);
+          toast({ type:'error', message:'Failed to delete interaction' });
+        });
+      }
+      return;
+    }
   });
 
-  // Esc closes any open modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const lm = document.getElementById('log-modal');
@@ -411,15 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // modal submits (delegated)
   document.addEventListener('submit', async (e) => {
-    // Log Interaction form
     if (e.target.closest('#log-form')) {
       e.preventDefault();
       await submitInteraction(e.target);
       return;
     }
-    // Add/Edit Friend form
     if (e.target.closest('#add-friend-form')) {
       e.preventDefault();
       await submitAddFriend(e.target);
@@ -427,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ----- init -----
+  // init
   headerBtn.dataset.action = 'log';
   go('dashboard');
 });

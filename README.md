@@ -114,3 +114,13 @@ Open a new terminal and navigate to the frontend directory.
 Run the Tailwind CSS build process in "watch" mode. This will automatically recompile your CSS when you make changes.
 
 npx tailwindcss -i ./src/css/input.css -o ./src/css/styles.css --watch
+
+
+If need to delete DB instance and recreate new, folloe below steps:
+
+go to cd /backend
+run below commands
+    flask shell
+    from app.models import db
+    db.create_all()
+    exit()
