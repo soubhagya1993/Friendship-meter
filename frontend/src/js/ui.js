@@ -33,6 +33,21 @@ function createFriendListItem(friend) {
   const connection = Number(friend.connection) || 0;
   const interactions = Number(friend.interactions) || 0;
 
+  // pick icon based on last interaction type
+  let lastIcon = '';
+  switch (friend.lastInteractionType) {
+    case 'call':
+      lastIcon = '📞'; break;
+    case 'video':
+      lastIcon = '💻'; break;
+    case 'meetup':
+      lastIcon = '☕'; break;
+    case 'text':
+      lastIcon = '💬'; break;
+    default:
+      lastIcon = '🗓️'; // fallback generic
+  }
+
   return `
     <div class="flex items-center p-3 hover:bg-background-beige rounded-lg">
       <img src="${avatar}" alt="${friend.name}" class="w-10 h-10 rounded-full mr-4">
@@ -47,7 +62,7 @@ function createFriendListItem(friend) {
         </div>
       </div>
       <div class="w-32 text-right">
-        <span class="bg-pill-red-bg text-pill-red-text text-xs font-bold px-3 py-1 rounded-full">${interactions} interactions</span>
+        <span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">${interactions} interactions </span>
       </div>
     </div>
   `;

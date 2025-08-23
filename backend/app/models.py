@@ -21,11 +21,21 @@ class Friend(db.Model):
     )
 
     # --- helper methods ---
-    def last_contact_days(self):
+    def last_interaction(self):
+        """Return the most recent interaction object (or None)."""
         if not self.interactions:
             return None
-        last = max(self.interactions, key=lambda i: i.occurred_at)
+        return max(self.interactions, key=lambda i: i.occurred_at)
+
+    def last_contact_days(self):
+        last = self.last_interaction()
+        if not last:
+            return None
         return (datetime.utcnow().date() - last.occurred_at.date()).days
+
+    def last_interaction_type(self):
+        last = self.last_interaction()
+        return last.type if last else None
 
     def interactions_count(self):
         return len(self.interactions)
@@ -53,7 +63,10 @@ class Friend(db.Model):
             "avatar": self.avatar
             or "https://placehold.co/48x48/60A5FA/0B1A2B?text=FM",
             "interactions": self.interactions_count(),
-            "lastContactDays": self.last_contact_days() if self.last_contact_days() is not None else 999,
+            "lastContactDays": self.last_contact_days()
+            if self.last_contact_days() is not None
+            else 999,
+            "lastInteractionType": self.last_interaction_type(),  # 👈 NEW FIELD
             "connection": self.connection_strength(),
         }
 
