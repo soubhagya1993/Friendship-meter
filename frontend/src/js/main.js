@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let friendsCache = [];
   let selectedInteractionType = null;
   let editingFriendId = null;
+  let pendingDeleteId = null;
 
   // ----- helpers (Log Interaction modal) -----
   function getLogModalEls() {
@@ -386,19 +387,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // delete interaction
     const delInteractionBtn = e.target.closest('[data-role="delete-interaction"]');
     if (delInteractionBtn) {
-      const id = delInteractionBtn.dataset.id;
-      if (confirm('Delete this interaction?')) {
-        deleteInteraction(id).then(() => {
-          toast({ type:'success', message:'Interaction deleted' });
-          go('interactions');
-        }).catch(err => {
-          console.error('[deleteInteraction]', err);
-          toast({ type:'error', message:'Failed to delete interaction' });
-        });
-      }
+      pendingDeleteId = delInteractionBtn.dataset.id;
+      document.getElementById('deleteModal').classList.remove('hidden');
       return;
     }
   });
+
+  // Delete modal buttons
+  const cancelDelete = document.getElementById('cancelDelete');
+  const confirmDelete = document.getElementById('confirmDelete');
+  if (cancelDelete) {
+    cancelDelete.addEventListener('click', () => {
+      pendingDeleteId = null;
+      document.getElementById('deleteModal').classList.add('hidden');
+    });
+  }
+  if (confirmDelete) {
+    confirmDelete.addEventListener('click', async () => {
+      if (!pendingDeleteId) return;
+      try {
+        await deleteInteraction(pendingDeleteId);
+        toast({ type:'success', message:'Interaction deleted' });
+        go('interactions');
+      } catch (err) {
+        console.error('[deleteInteraction]', err);
+        toast({ type:'error', message:'Failed to delete interaction' });
+      } finally {
+        pendingDeleteId = null;
+        document.getElementById('deleteModal').classList.add('hidden');
+      }
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -406,8 +425,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const fm = document.getElementById('add-friend-modal');
       if (lm && !lm.classList.contains('hidden')) toggleLogModal(false);
       if (fm && !fm.classList.contains('hidden')) toggleAddFriendModal(false);
+      document.getElementById('deleteModal')?.classList.add('hidden');
     }
   });
+
+
 
   document.addEventListener('submit', async (e) => {
     if (e.target.closest('#log-form')) {
