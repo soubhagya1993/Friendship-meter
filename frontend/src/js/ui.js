@@ -114,14 +114,79 @@ export function populateFriendOptions(selectElement, friends) {
  * Settings page.
  */
 export function renderSettingsPage(container) {
-  const settingsContent = `
-    <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
-      <h3 class="font-nunito text-lg font-bold mb-4">Application Settings</h3>
-      <p class="text-text-secondary">Settings for notifications, data management, and account preferences will be available here in a future update.</p>
+  container.innerHTML = `
+    <div class="space-y-6">
+
+      <!-- Profile -->
+      <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
+        <h3 class="font-nunito text-lg font-bold mb-4">Profile</h3>
+        <div class="flex items-start space-x-6">
+          <!-- Avatar -->
+          <div class="flex-shrink-0">
+            <img src="https://placehold.co/80x80?text=U" 
+                 alt="User avatar"
+                 class="w-20 h-20 rounded-full border border-gray-300">
+          </div>
+
+          <!-- Name + Email -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow">
+            <div>
+              <label class="block text-sm text-text-secondary mb-1">Name</label>
+              <input type="text" 
+                     class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-primary-teal" 
+                     placeholder="Your name" />
+            </div>
+            <div>
+              <label class="block text-sm text-text-secondary mb-1">Email</label>
+              <input type="email" 
+                     class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-primary-teal" 
+                     placeholder="you@example.com" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
+        <h3 class="font-nunito text-lg font-bold mb-4">Preferences</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-text-secondary mb-1">Default Interaction</label>
+            <select class="w-full p-2.5 border border-gray-300 rounded-lg">
+              <option>Meetup</option>
+              <option>Call</option>
+              <option>Video</option>
+              <option>Text</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-text-secondary mb-1">Notifications</label>
+            <select class="w-full p-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-teal focus:border-primary-teal bg-white text-text-primary appearance-none">
+              <option>Daily</option>
+              <option>Weekly</option>
+              <option>Off</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data & Account -->
+      <div class="bg-card-beige p-6 rounded-xl border border-border-soft">
+        <h3 class="font-nunito text-lg font-bold mb-4 text-red-600">Data & Account</h3>
+        <div class="space-y-3">
+          <button class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300">
+            Export My Data
+          </button>
+          <button class="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-200">
+            Clear All Data
+          </button>
+        </div>
+      </div>
+
     </div>
   `;
-  container.innerHTML = settingsContent;
 }
+
 
 function createManageFriendCard({ id, name, avatar, email, phone, preference, bio, interactions, lastContactDays }) {
   const av = avatar || 'https://placehold.co/48x48?text=FM';
