@@ -29,8 +29,8 @@ friendship_meter_webapp/
 └── README.md                   # Project overview, setup instructions, etc.
 
 
-Friendship Meter Web Application
-The Friendship Meter is a mindful, data-driven web application designed to help users be more intentional about their friendships. It provides insights into interaction frequency and balance, empowering users to nurture their meaningful connections.
+Amigo Meter Web Application
+The Amigo Meter is a mindful, data-driven web application designed to help users be more intentional about their friendships. It provides insights into interaction frequency and balance, empowering users to nurture their meaningful connections.
 
 This project is a full-stack application built with a Python/Flask backend and a vanilla JavaScript/Tailwind CSS frontend.
 
